@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	MAX_CACHE_SIZE          = 10
+	MAX_CACHE_SIZE          = 1000
 	CACHE_EXPIRY_TIME       = 5 * time.Minute
 	CACHE_EXPIRY_SLEEP_TIME = 1 * time.Minute
 )
