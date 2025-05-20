@@ -143,8 +143,11 @@ func TestCachedFunctionConcurrentCalls(t *testing.T) {
 	// mock cache
 	cached = NewFunctionCache()
 
+	var calls int
+
 	// Define a simple function to be cached
 	f := func(args ...interface{}) interface{} {
+		calls++
 		return args[0].(int) + args[1].(int)
 	}
 
@@ -158,17 +161,27 @@ func TestCachedFunctionConcurrentCalls(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		result1 = cachedFunc(1, 2)
+		for i := 0; i < 100; i++ {
+			result1 = cachedFunc(1, 2)
+			time.Sleep(time.Millisecond)
+		}
 	}()
 	go func() {
 		defer wg.Done()
-		result2 = cachedFunc(1, 2)
+		for i := 0; i < 100; i++ {
+			result2 = cachedFunc(1, 2)
+			time.Sleep(time.Millisecond)
+		}
 	}()
 	wg.Wait()
 
 	// Check if the results are the same
 	if result1 != result2 {
 		t.Errorf("Expected %v, got %v", result1, result2)
+	}
+
+	if calls != 1 {
+		t.Errorf("Expected function to be called once, but it was called %d times", calls)
 	}
 }
 

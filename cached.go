@@ -19,7 +19,9 @@ type FunctionCache struct {
 	cache    map[string]interface{}
 	entry    map[string]time.Time
 	inflight map[string]bool
+	mutex    map[string]*sync.Mutex
 	cond     map[string]*sync.Cond
+	waits    map[string]int
 }
 
 func NewFunctionCache() *FunctionCache {
@@ -27,11 +29,13 @@ func NewFunctionCache() *FunctionCache {
 		cache:    make(map[string]interface{}),
 		entry:    make(map[string]time.Time),
 		inflight: make(map[string]bool),
+		mutex:    make(map[string]*sync.Mutex),
+		cond:     make(map[string]*sync.Cond),
+		waits:    make(map[string]int),
 	}
 	// Feature 3. Expiration of the cache
 	go func() {
 		for {
-			//fmt.Println("Sleeping", CACHE_EXPIRY_SLEEP_TIME)
 			time.Sleep(CACHE_EXPIRY_SLEEP_TIME)
 			fc.m.Lock()
 			for k, t := range fc.entry {
@@ -51,6 +55,7 @@ func NewFunctionCache() *FunctionCache {
 func NewCachedFunction(f func(args ...interface{}) interface{}) func(args ...interface{}) interface{} {
 	return func(args ...interface{}) interface{} {
 		key := fmt.Sprintf("%v", args)
+		// Critical section to ensure safety
 		cached.m.Lock()
 		defer cached.m.Unlock()
 
@@ -75,8 +80,9 @@ func NewCachedFunction(f func(args ...interface{}) interface{}) func(args ...int
 		}
 
 		// Feature 2. In-Flight Request Deduplication - register waiter
-		if cached.inflight[key] {
+		if _, found := cached.inflight[key]; found {
 			cached.cond[key].L.Lock()
+			cached.waits[key]++
 			cached.cond[key].Wait()
 			cached.cond[key].L.Unlock()
 			if result, found := cached.cache[key]; found {
@@ -86,8 +92,13 @@ func NewCachedFunction(f func(args ...interface{}) interface{}) func(args ...int
 			return nil
 		}
 
-		// Call the original function and cache the result
+		// Call the original function outside of critical section and cache the result
+		cached.inflight[key] = true
+		cached.mutex[key] = &sync.Mutex{}
+		cached.cond[key] = sync.NewCond(cached.mutex[key])
+		cached.m.Unlock()
 		result := f(args...)
+		cached.m.Lock()
 		cached.cache[key] = result
 		cached.entry[key] = time.Now()
 
