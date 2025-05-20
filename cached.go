@@ -96,9 +96,12 @@ func NewCachedFunction(f func(args ...interface{}) interface{}) func(args ...int
 		cached.inflight[key] = true
 		cached.mutex[key] = &sync.Mutex{}
 		cached.cond[key] = sync.NewCond(cached.mutex[key])
+
+		// Call the original function outside of critaical section, it must be reentrant
 		cached.m.Unlock()
 		result := f(args...)
 		cached.m.Lock()
+
 		cached.cache[key] = result
 		cached.entry[key] = time.Now()
 

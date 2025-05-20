@@ -185,6 +185,36 @@ func TestCachedFunctionConcurrentCalls(t *testing.T) {
 	}
 }
 
+// Test: Cache is thread-safe
+func TestCachedFunctionThreadSafety(t *testing.T) {
+	// mock timers
+	CACHE_EXPIRY_TIME = time.Second
+	CACHE_EXPIRY_SLEEP_TIME = time.Second
+	// mock cache
+	MAX_CACHE_SIZE = 1000
+	cached = NewFunctionCache()
+
+	// Define a simple function to be cached
+	f := func(args ...interface{}) interface{} {
+		return args[0].(int) + args[1].(int)
+	}
+
+	// Create a cached version of the function
+	cachedFunc := NewCachedFunction(f)
+
+	var wg sync.WaitGroup
+
+	// Call the cached function concurrently with different arguments
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			cachedFunc(i, i+1)
+		}(i)
+	}
+	wg.Wait()
+}
+
 // Benchmark: Direct function execution
 func BenchmarkDirectFunctionExecution(b *testing.B) {
 	// Define a simple function to be benchmarked
