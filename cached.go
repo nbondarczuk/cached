@@ -52,10 +52,10 @@ func NewFunctionCache(ctx context.Context) *FunctionCache {
 	// Feature 3. Expiration of the cache
 	go func(ctx context.Context) {
 		for {
-			time.Sleep(CacheExpirySleepTime)
 			if ctx.Err() != nil {
 				return
 			}
+			time.Sleep(CacheExpirySleepTime)
 			fc.m.Lock()
 			for k, t := range fc.entry {
 				if time.Since(t) > CacheExpiryTime {
