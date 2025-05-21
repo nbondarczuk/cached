@@ -1,6 +1,7 @@
 package cached
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -21,7 +22,7 @@ var (
 	CACHE_EXPIRY_SLEEP_TIME = 1 * time.Minute
 )
 
-var cached = NewFunctionCache()
+var cached = NewFunctionCache(context.Background())
 
 type FunctionCache struct {
 	m        sync.Mutex
@@ -33,7 +34,7 @@ type FunctionCache struct {
 	waits    map[string]int
 }
 
-func NewFunctionCache() *FunctionCache {
+func NewFunctionCache(ctx context.Context) *FunctionCache {
 	fc := &FunctionCache{
 		cache:    make(map[string]interface{}),
 		entry:    make(map[string]time.Time),
@@ -42,22 +43,24 @@ func NewFunctionCache() *FunctionCache {
 		cond:     make(map[string]*sync.Cond),
 		waits:    make(map[string]int),
 	}
-	// Feature 3. Expiration of the cache
 
-	go func() {
+	// Feature 3. Expiration of the cache
+	go func(ctx context.Context) {
 		for {
 			time.Sleep(CACHE_EXPIRY_SLEEP_TIME)
+			if ctx.Err() != nil {
+				return
+			}
 			fc.m.Lock()
 			for k, t := range fc.entry {
 				if time.Since(t) > CACHE_EXPIRY_TIME {
 					delete(fc.cache, k)
 					delete(fc.entry, k)
-					delete(fc.inflight, k)
 				}
 			}
 			fc.m.Unlock()
 		}
-	}()
+	}(ctx)
 
 	return fc
 }

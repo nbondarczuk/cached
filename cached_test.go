@@ -1,6 +1,7 @@
 package cached
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -11,7 +12,9 @@ import (
 // Test: Return values are correctly cached
 func TestCachedReturnValues(t *testing.T) {
 	// mock cache
-	cached = NewFunctionCache()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cached = NewFunctionCache(ctx)
 
 	// Define a simple function to be cached
 	f := func(args ...interface{}) interface{} {
@@ -45,7 +48,9 @@ func TestCachedFunctionExpiryTimeLimit(t *testing.T) {
 	CACHE_EXPIRY_TIME = time.Second
 	CACHE_EXPIRY_SLEEP_TIME = time.Second
 	// mock cache
-	cached = NewFunctionCache()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cached = NewFunctionCache(ctx)
 
 	// Define a simple function to be cached
 	f := func(args ...interface{}) interface{} {
@@ -75,7 +80,9 @@ func TestCachedFunctionCapacityLimit(t *testing.T) {
 	CACHE_EXPIRY_TIME = time.Second * 10
 	CACHE_EXPIRY_SLEEP_TIME = time.Second * 10
 	// mock cache
-	cached = NewFunctionCache()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cached = NewFunctionCache(ctx)
 
 	// Define a simple function to be cached
 	f := func(args ...interface{}) interface{} {
@@ -105,7 +112,9 @@ func TestCachedFunctionEviction(t *testing.T) {
 	CACHE_EXPIRY_TIME = time.Second
 	CACHE_EXPIRY_SLEEP_TIME = time.Second
 	// mock cache
-	cached = NewFunctionCache()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cached = NewFunctionCache(ctx)
 
 	// Define a simple function to be cached
 	f := func(args ...interface{}) interface{} {
@@ -142,7 +151,9 @@ func TestCachedFunctionConcurrentCalls(t *testing.T) {
 	CACHE_EXPIRY_TIME = time.Second
 	CACHE_EXPIRY_SLEEP_TIME = time.Second
 	// mock cache
-	cached = NewFunctionCache()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cached = NewFunctionCache(ctx)
 
 	var calls int
 
@@ -193,7 +204,9 @@ func TestCachedFunctionThreadSafetyWithSleep(t *testing.T) {
 	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
 	// mock cache
 	MAX_CACHE_SIZE = 1000
-	cached = NewFunctionCache()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cached = NewFunctionCache(ctx)
 
 	// Define a simple function to be cached
 	f := func(args ...interface{}) interface{} {
@@ -224,7 +237,9 @@ func BenchmarkDirectFunctionExecution(b *testing.B) {
 	CACHE_EXPIRY_TIME = 100 * time.Second
 	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
 	// mock cache
-	cached = NewFunctionCache()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cached = NewFunctionCache(ctx)
 
 	// Define a simple function to be benchmarked
 	f := func(args ...interface{}) interface{} {
@@ -243,7 +258,9 @@ func BenchmarkCachedFunctionExecution(b *testing.B) {
 	CACHE_EXPIRY_TIME = 100 * time.Second
 	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
 	// mock cache
-	cached = NewFunctionCache()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cached = NewFunctionCache(ctx)
 
 	// Define a simple function to be cached
 	f := func(args ...interface{}) interface{} {
@@ -265,7 +282,9 @@ func BenchmarkCachedFunctionExecutionHighParallelism(b *testing.B) {
 	CACHE_EXPIRY_TIME = 100 * time.Second
 	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
 	// mock cache
-	cached = NewFunctionCache()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cached = NewFunctionCache(ctx)
 
 	// Define a simple function to be cached
 	f := func(args ...interface{}) interface{} {
