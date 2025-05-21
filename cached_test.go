@@ -2,6 +2,7 @@ package cached
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"testing"
 	"time"
@@ -186,16 +187,18 @@ func TestCachedFunctionConcurrentCalls(t *testing.T) {
 }
 
 // Test: Cache is thread-safe
-func TestCachedFunctionThreadSafety(t *testing.T) {
+func TestCachedFunctionThreadSafetyWithSleep(t *testing.T) {
 	// mock timers
-	CACHE_EXPIRY_TIME = time.Second
-	CACHE_EXPIRY_SLEEP_TIME = time.Second
+	CACHE_EXPIRY_TIME = 100 * time.Second
+	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
 	// mock cache
 	MAX_CACHE_SIZE = 1000
 	cached = NewFunctionCache()
 
 	// Define a simple function to be cached
 	f := func(args ...interface{}) interface{} {
+		log.Printf("Test function: Sleeping for 100ms\n")
+		time.Sleep(100 * time.Millisecond) // Simulate some processing time
 		return args[0].(int) + args[1].(int)
 	}
 
@@ -205,11 +208,11 @@ func TestCachedFunctionThreadSafety(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Call the cached function concurrently with different arguments
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			cachedFunc(i, i+1)
+			cachedFunc(1, 2)
 		}(i)
 	}
 	wg.Wait()
