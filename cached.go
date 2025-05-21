@@ -2,10 +2,15 @@ package cached
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"sync"
 	"time"
 )
+
+func init() {
+	log.SetOutput(ioutil.Discard)
+}
 
 var (
 	MAX_CACHE_SIZE          = 1000
@@ -134,7 +139,6 @@ func NewCachedFunction(f func(args ...interface{}) interface{}) func(args ...int
 			cached.cond[key].Broadcast()
 			cached.cond[key].L.Unlock()
 			delete(cached.inflight, key)
-			//delete(cached.cond, key)
 		}
 		cached.m.Unlock()
 
