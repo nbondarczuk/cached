@@ -108,7 +108,7 @@ func NewCachedFunction(f func(args ...interface{}) interface{}) func(args ...int
 			cached.cond[key].L.Unlock()
 			cached.m.Lock()
 			if result, found := cached.cache[key]; found {
-				log.Printf("Cache hit after waiting: %v\n", key)
+				log.Printf("Cache hit after waiting: %v -> %v\n", key, result)
 				cached.m.Unlock()
 				return result
 			}
