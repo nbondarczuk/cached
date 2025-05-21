@@ -3,7 +3,7 @@ package cached
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"sync"
@@ -12,18 +12,22 @@ import (
 
 func init() {
 	if os.Getenv("DEBUG") == "" {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	}
 }
 
 var (
-	MAX_CACHE_SIZE          = 1000
-	CACHE_EXPIRY_TIME       = 5 * time.Minute
-	CACHE_EXPIRY_SLEEP_TIME = 1 * time.Minute
+	// MaxCacheSize is a max numer of entries in the cache
+	MaxCacheSize = 1000
+	// CacheExpiryTime is a cache expiry time and sleep time for the expiration goroutine
+	CacheExpiryTime = 5 * time.Minute
+	// CacheExpirySleepTime is a cache expiry sleep time
+	CacheExpirySleepTime = 1 * time.Minute
 )
 
 var cached = NewFunctionCache(context.Background())
 
+// FunctionCache is a structure that holds the cache, entry time, in-flight requests, and mutexes for synchronization.
 type FunctionCache struct {
 	m        sync.Mutex
 	cache    map[string]interface{}
@@ -34,6 +38,7 @@ type FunctionCache struct {
 	waits    map[string]int
 }
 
+// NewFunctionCache creates a new FunctionCache instance.
 func NewFunctionCache(ctx context.Context) *FunctionCache {
 	fc := &FunctionCache{
 		cache:    make(map[string]interface{}),
@@ -47,13 +52,13 @@ func NewFunctionCache(ctx context.Context) *FunctionCache {
 	// Feature 3. Expiration of the cache
 	go func(ctx context.Context) {
 		for {
-			time.Sleep(CACHE_EXPIRY_SLEEP_TIME)
+			time.Sleep(CacheExpirySleepTime)
 			if ctx.Err() != nil {
 				return
 			}
 			fc.m.Lock()
 			for k, t := range fc.entry {
-				if time.Since(t) > CACHE_EXPIRY_TIME {
+				if time.Since(t) > CacheExpiryTime {
 					delete(fc.cache, k)
 					delete(fc.entry, k)
 				}
@@ -72,7 +77,7 @@ func NewCachedFunction(f func(args ...interface{}) interface{}) func(args ...int
 
 		// Feature 4. Capacity limit
 		cached.m.Lock()
-		if len(cached.cache) >= MAX_CACHE_SIZE {
+		if len(cached.cache) >= MaxCacheSize {
 			// Remove the oldest entry making new slot available
 			var oldestKey string
 			var oldestTime time.Time

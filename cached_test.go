@@ -45,8 +45,8 @@ func TestCachedReturnValues(t *testing.T) {
 // Test: Results expire after X minutes
 func TestCachedFunctionExpiryTimeLimit(t *testing.T) {
 	// mock timers
-	CACHE_EXPIRY_TIME = time.Second
-	CACHE_EXPIRY_SLEEP_TIME = time.Second
+	CacheExpiryTime = time.Second
+	CacheExpirySleepTime = time.Second
 	// mock cache
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -66,7 +66,7 @@ func TestCachedFunctionExpiryTimeLimit(t *testing.T) {
 	key1 := fmt.Sprintf("%v", args)
 
 	// Wait for the cache to expire
-	time.Sleep(2 * CACHE_EXPIRY_TIME)
+	time.Sleep(2 * CacheExpiryTime)
 
 	_, ok := cached.cache[key1]
 	if ok {
@@ -74,11 +74,11 @@ func TestCachedFunctionExpiryTimeLimit(t *testing.T) {
 	}
 }
 
-// Test: Cache never exceeds MAX_CACHE_SIZE entries
+// Test: Cache never exceeds MaxCacheSize entries
 func TestCachedFunctionCapacityLimit(t *testing.T) {
 	// mock timers
-	CACHE_EXPIRY_TIME = time.Second * 10
-	CACHE_EXPIRY_SLEEP_TIME = time.Second * 10
+	CacheExpiryTime = time.Second * 10
+	CacheExpirySleepTime = time.Second * 10
 	// mock cache
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -93,15 +93,15 @@ func TestCachedFunctionCapacityLimit(t *testing.T) {
 	cachedFunc := NewCachedFunction(f)
 
 	// Fill the cache to its maximum capacity
-	for i := 0; i < MAX_CACHE_SIZE; i++ {
+	for i := 0; i < MaxCacheSize; i++ {
 		cachedFunc(i, i+1)
 	}
 
 	// Call the cached function with new arguments to trigger eviction
-	cachedFunc(MAX_CACHE_SIZE, MAX_CACHE_SIZE+1)
+	cachedFunc(MaxCacheSize, MaxCacheSize+1)
 
 	// Check if the cache size is within the limit
-	if len(cached.cache) > MAX_CACHE_SIZE {
+	if len(cached.cache) > MaxCacheSize {
 		t.Errorf("Expected cache size to be within limit, but got %d", len(cached.cache))
 	}
 }
@@ -109,8 +109,8 @@ func TestCachedFunctionCapacityLimit(t *testing.T) {
 // Test: Oldest entries are evicted when the cache is full
 func TestCachedFunctionEviction(t *testing.T) {
 	// mock timers
-	CACHE_EXPIRY_TIME = time.Second
-	CACHE_EXPIRY_SLEEP_TIME = time.Second
+	CacheExpiryTime = time.Second
+	CacheExpirySleepTime = time.Second
 	// mock cache
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -127,7 +127,7 @@ func TestCachedFunctionEviction(t *testing.T) {
 	var first string
 
 	// Fill the cache to its maximum capacity
-	for i := 0; i < MAX_CACHE_SIZE; i++ {
+	for i := 0; i < MaxCacheSize; i++ {
 		if i == 0 {
 			args := []interface{}{i, i + 1}
 			first = fmt.Sprintf("%v", args)
@@ -137,7 +137,7 @@ func TestCachedFunctionEviction(t *testing.T) {
 	}
 
 	// Call the cached function with new arguments to trigger eviction
-	cachedFunc(MAX_CACHE_SIZE, MAX_CACHE_SIZE+1)
+	cachedFunc(MaxCacheSize, MaxCacheSize+1)
 
 	// Check if the oldest entry is evicted
 	if _, ok := cached.cache[first]; ok {
@@ -148,8 +148,8 @@ func TestCachedFunctionEviction(t *testing.T) {
 // Test: Concurrent calls with same input are deduplicated
 func TestCachedFunctionConcurrentCalls(t *testing.T) {
 	// mock timers
-	CACHE_EXPIRY_TIME = time.Second
-	CACHE_EXPIRY_SLEEP_TIME = time.Second
+	CacheExpiryTime = time.Second
+	CacheExpirySleepTime = time.Second
 	// mock cache
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -200,10 +200,10 @@ func TestCachedFunctionConcurrentCalls(t *testing.T) {
 // Test: Cache is thread-safe
 func TestCachedFunctionThreadSafetyWithSleep(t *testing.T) {
 	// mock timers
-	CACHE_EXPIRY_TIME = 100 * time.Second
-	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
+	CacheExpiryTime = 100 * time.Second
+	CacheExpirySleepTime = 100 * time.Second
 	// mock cache
-	MAX_CACHE_SIZE = 1000
+	MaxCacheSize = 1000
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	cached = NewFunctionCache(ctx)
@@ -234,8 +234,8 @@ func TestCachedFunctionThreadSafetyWithSleep(t *testing.T) {
 // Benchmark: Direct function execution
 func BenchmarkDirectFunctionExecution(b *testing.B) {
 	// mock timers
-	CACHE_EXPIRY_TIME = 100 * time.Second
-	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
+	CacheExpiryTime = 100 * time.Second
+	CacheExpirySleepTime = 100 * time.Second
 	// mock cache
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -255,8 +255,8 @@ func BenchmarkDirectFunctionExecution(b *testing.B) {
 // Benchmark: Cached function execution
 func BenchmarkCachedFunctionExecution(b *testing.B) {
 	// mock timers
-	CACHE_EXPIRY_TIME = 100 * time.Second
-	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
+	CacheExpiryTime = 100 * time.Second
+	CacheExpirySleepTime = 100 * time.Second
 	// mock cache
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -279,8 +279,8 @@ func BenchmarkCachedFunctionExecution(b *testing.B) {
 // Benchmark: high parallelity
 func BenchmarkCachedFunctionExecutionHighParallelism(b *testing.B) {
 	// mock timers
-	CACHE_EXPIRY_TIME = 100 * time.Second
-	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
+	CacheExpiryTime = 100 * time.Second
+	CacheExpirySleepTime = 100 * time.Second
 	// mock cache
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
