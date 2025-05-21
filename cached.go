@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"sync"
 	"time"
 )
 
 func init() {
-	log.SetOutput(ioutil.Discard)
+	if os.Getenv("DEBUG") == "" {
+		log.SetOutput(ioutil.Discard)
+	}
 }
 
 var (
