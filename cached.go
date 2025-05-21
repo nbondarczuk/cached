@@ -58,11 +58,9 @@ func NewFunctionCache() *FunctionCache {
 func NewCachedFunction(f func(args ...interface{}) interface{}) func(args ...interface{}) interface{} {
 	return func(args ...interface{}) interface{} {
 		key := fmt.Sprintf("%v", args)
-		// Critical section to ensure safety
-		cached.m.Lock()
-		defer cached.m.Unlock()
 
 		// Feature 4. Capacity limit
+		cached.m.Lock()
 		if len(cached.cache) >= MAX_CACHE_SIZE {
 			// Remove the oldest entry making new slot available
 			var oldestKey string
@@ -77,52 +75,68 @@ func NewCachedFunction(f func(args ...interface{}) interface{}) func(args ...int
 			delete(cached.entry, oldestKey)
 			log.Printf("Evicted oldest entry: %v, cache size: %d\n", oldestKey, len(cached.cache))
 		}
+		cached.m.Unlock()
 
 		// Feature 1. Memoization
+		cached.m.Lock()
 		if result, found := cached.cache[key]; found {
 			log.Printf("Cache hit: %v -> %v\n", key, result)
+			cached.m.Unlock()
 			return result
 		}
+		cached.m.Unlock()
 
 		// Feature 2. In-Flight Request Deduplication - register waiter
+		cached.m.Lock()
 		if _, found := cached.inflight[key]; found {
 			cached.cond[key].L.Lock()
 			cached.waits[key]++
 			log.Printf("Waiting for slot: %v, waits: %d\n", key, cached.waits[key])
+			cached.m.Unlock()
 			cached.cond[key].Wait()
 			cached.cond[key].L.Unlock()
+			cached.m.Lock()
 			if result, found := cached.cache[key]; found {
 				log.Printf("Cache hit after waiting: %v\n", key)
+				cached.m.Unlock()
 				return result
 			}
 
 			// If the cache is still not available, return nil
 			log.Println("Cache not available after waiting, returning nil")
+			cached.m.Unlock()
 			return nil
 		}
+		cached.m.Unlock()
 
 		// Call the original function and cache the result
+		cached.m.Lock()
 		cached.inflight[key] = true
 		cached.mutex[key] = &sync.Mutex{}
 		cached.cond[key] = sync.NewCond(cached.mutex[key])
+		cached.m.Unlock()
 
 		// Call the original function
 		log.Printf("Calling original function: %v\n", key)
 		result := f(args...)
-		log.Printf("Original function result: %v\n", result)
+		log.Printf("Original function result: %v -> %v\n", key, result)
 
+		cached.m.Lock()
 		cached.cache[key] = result
 		cached.entry[key] = time.Now()
+		cached.m.Unlock()
 
 		// Feature 2. In-Flight Request Deduplication - notify waiters
+		cached.m.Lock()
 		if _, found := cached.inflight[key]; found {
 			cached.cond[key].L.Lock()
 			log.Printf("Notifying waiters for slot: %v\n", key)
 			cached.cond[key].Broadcast()
 			cached.cond[key].L.Unlock()
 			delete(cached.inflight, key)
-			delete(cached.cond, key)
+			//delete(cached.cond, key)
 		}
+		cached.m.Unlock()
 
 		// Return the result with time stamp of it
 		log.Printf("Returning result: %v -> %v\n", key, result)

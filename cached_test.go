@@ -220,6 +220,12 @@ func TestCachedFunctionThreadSafetyWithSleep(t *testing.T) {
 
 // Benchmark: Direct function execution
 func BenchmarkDirectFunctionExecution(b *testing.B) {
+	// mock timers
+	CACHE_EXPIRY_TIME = 100 * time.Second
+	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
+	// mock cache
+	cached = NewFunctionCache()
+
 	// Define a simple function to be benchmarked
 	f := func(args ...interface{}) interface{} {
 		return args[0].(int) + args[1].(int)
@@ -234,8 +240,8 @@ func BenchmarkDirectFunctionExecution(b *testing.B) {
 // Benchmark: Cached function execution
 func BenchmarkCachedFunctionExecution(b *testing.B) {
 	// mock timers
-	CACHE_EXPIRY_TIME = time.Second
-	CACHE_EXPIRY_SLEEP_TIME = time.Second
+	CACHE_EXPIRY_TIME = 100 * time.Second
+	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
 	// mock cache
 	cached = NewFunctionCache()
 
@@ -253,11 +259,11 @@ func BenchmarkCachedFunctionExecution(b *testing.B) {
 	}
 }
 
-// Benchmark: Performance under high concurrency
-func BenchmarkCachedFunctionHighConcurrency(b *testing.B) {
+// Benchmark: high parallelity
+func BenchmarkCachedFunctionExecutionHighParallelism(b *testing.B) {
 	// mock timers
-	CACHE_EXPIRY_TIME = time.Second
-	CACHE_EXPIRY_SLEEP_TIME = time.Second
+	CACHE_EXPIRY_TIME = 100 * time.Second
+	CACHE_EXPIRY_SLEEP_TIME = 100 * time.Second
 	// mock cache
 	cached = NewFunctionCache()
 
@@ -265,21 +271,12 @@ func BenchmarkCachedFunctionHighConcurrency(b *testing.B) {
 	f := func(args ...interface{}) interface{} {
 		return args[0].(int) + args[1].(int)
 	}
-
 	// Create a cached version of the function
 	cachedFunc := NewCachedFunction(f)
-
-	var wg sync.WaitGroup
-
-	// Benchmark the cached function execution under high concurrency
+	// Benchmark the cached function execution
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				cachedFunc(1, 2)
-			}()
+			cachedFunc(1, 2)
 		}
 	})
-	wg.Wait()
 }
